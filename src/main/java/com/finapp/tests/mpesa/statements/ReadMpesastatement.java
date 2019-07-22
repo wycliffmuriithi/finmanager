@@ -39,14 +39,15 @@ public class ReadMpesastatement {
             while (counter <= pages) {
                 String rawpage = PdfTextExtractor.getTextFromPage(pdfReader, counter);
                 String[] raw_transactions = rawpage.split("\n");
-                int arrayindex=0;
-                for (String transaction:raw_transactions){
-                    if (transaction.matches("^[A-Z0-9]{10}\\b.*")) {
+                int arrayindex = 0;
+
+                for (String transaction : raw_transactions) {
+                    if (transaction.matches("^\\b[A-Z0-9]{10}\\b\\s[0-9].*")) {
                         StatmntTrans statmntTrans = new StatmntTrans();
                         int nextindex = arrayindex + 1 == raw_transactions.length ? arrayindex : arrayindex + 1;
-//                        LOGGER.info(transaction);
-                    statmntTrans.readStatement(transaction,raw_transactions[nextindex]);
-//                    LOGGER.info(statmntTrans);
+//
+                        statmntTrans.readStatement(transaction, raw_transactions[nextindex]);
+                        LOGGER.info(statmntTrans);
                     }
                     arrayindex++;
                 }
