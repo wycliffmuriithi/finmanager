@@ -1,0 +1,71 @@
+package com.finapp.tests.services.mpesa.statements;
+
+import com.finapp.tests.database.MpesastatementRepo;
+import com.finapp.tests.database.entities.MpesaStatements;
+import org.bson.BsonBinarySubType;
+import org.bson.types.Binary;
+import org.jboss.logging.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.FileOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+
+/**
+ * Class name: FilestorageService
+ * Creater: wgicheru
+ * Date:7/25/2019
+ */
+@Service
+public class FilestorageService {
+    private static final Logger LOGGER = Logger.getLogger(FilestorageService.class);
+    @Autowired
+    MpesastatementRepo mpesastatementRepo;
+
+
+    public String saveFileupload(String authenticateduser, MultipartFile multipart) {
+        try {
+            LOGGER.info("saving file " + multipart.getResource().getFilename());
+            MpesaStatements mpesaStatements = new MpesaStatements();
+            mpesaStatements.setStatementfile(new Binary(BsonBinarySubType.BINARY, multipart.getBytes()));
+            mpesaStatements.setUser(authenticateduser);
+            mpesaStatements.setFilename(multipart.getOriginalFilename());
+
+            mpesastatementRepo.save(mpesaStatements);
+            return multipart.getResource().getFilename() + " saved successfully";
+        } catch (Exception ex) {
+            LOGGER.error(ex.getMessage(), ex);
+        }
+        return "error saving " + multipart.getResource().getFilename();
+    }
+
+    public List<String> listMpesastatements(String authenticateduser) {
+        List<MpesaStatements> mpesadocumentList = mpesastatementRepo.findByUser(authenticateduser);
+        return mpesadocumentList.stream().map(document -> document.getFilename()).collect(Collectors.toList());
+    }
+
+
+    public Optional<Resource> retrieveFile(String email, String filename) {
+        List<MpesaStatements> mpesadocumentList = mpesastatementRepo.findByUserAndFilename(email, filename);
+        if (mpesadocumentList.isEmpty()) {
+            return Optional.empty();
+        }
+
+        MpesaStatements document = mpesadocumentList.get(0);
+        LOGGER.info("writing file " + document.getFilename());
+        Resource resource = new ByteArrayResource(document.getStatementfile().getData());
+        return Optional.of(resource);
+    }
+}
