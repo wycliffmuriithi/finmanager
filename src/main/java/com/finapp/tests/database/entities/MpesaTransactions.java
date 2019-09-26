@@ -2,9 +2,15 @@ package com.finapp.tests.database.entities;
 
 import com.finapp.tests.wrappers.enums.TransStatus;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.annotation.Id;
 
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Table;
 import java.util.Date;
 
 /**
@@ -13,8 +19,11 @@ import java.util.Date;
  * Date:9/1/2019
  */
 @Data
-@RequiredArgsConstructor
+@RequiredArgsConstructor @Entity @Table(name="tblmpesatransactions") @NoArgsConstructor
 public class MpesaTransactions extends BaseEntity {
+//    @Id
+//    @GeneratedValue(strategy= GenerationType.IDENTITY)
+//    public String id;
     @NonNull
     private double amount;
     @NonNull
@@ -29,6 +38,6 @@ public class MpesaTransactions extends BaseEntity {
     private String user;
     @NonNull
     private String processed;
-    private String transtypeid;
+    private long transtypeid;
 
 }

@@ -1,8 +1,10 @@
 package com.finapp.tests.database.entities;
 
 import lombok.Data;
-import org.springframework.data.annotation.Id;
+import org.hibernate.annotations.Generated;
+import org.hibernate.annotations.GenerationTime;
 
+import javax.persistence.*;
 import java.util.Date;
 
 /**
@@ -14,8 +16,13 @@ import java.util.Date;
  * Creater: wgicheru
  * Date:7/25/2019
  */
-@Data
+@Data @MappedSuperclass
 public class BaseEntity {
     @Id
-    public String _id;
+    @GeneratedValue(strategy= GenerationType.IDENTITY)
+    public long id;
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    @Generated(GenerationTime.INSERT)
+    public Date createdon;
 }

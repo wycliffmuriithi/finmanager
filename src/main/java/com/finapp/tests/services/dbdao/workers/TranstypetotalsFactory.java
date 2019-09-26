@@ -45,7 +45,7 @@ public class TranstypetotalsFactory {
                 //get the user
                 String user = mpesaTransactions.getUser();
                 //get type
-                String transtypeid = mpesaTransactions.getTranstypeid();
+                long transtypeid = mpesaTransactions.getTranstypeid();
 
                 List<TotalsbyTranstype> totalsbyTranstypeList = totalsbytranstypeRepo.findByUserAndTranstypeid(user, transtypeid);
                 TotalsbyTranstype totalsbyTranstype;

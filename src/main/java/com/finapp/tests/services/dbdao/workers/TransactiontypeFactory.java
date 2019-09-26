@@ -56,7 +56,7 @@ public class TransactiontypeFactory {
                 transaction.setTranstypeid(
                         mpesatranstypesRepo
                                 .findByTransclassAndTranstype(trans_class,trans_type)
-                                .get_id());
+                                .getId());
                 transaction.setProcessed(TransStatus.mom.name());
             });
 

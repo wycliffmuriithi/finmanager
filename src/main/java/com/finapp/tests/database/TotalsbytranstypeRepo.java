@@ -1,7 +1,7 @@
 package com.finapp.tests.database;
 
 import com.finapp.tests.database.entities.TotalsbyTranstype;
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
@@ -10,6 +10,6 @@ import java.util.List;
  * Creater: wgicheru
  * Date:9/20/2019
  */
-public interface TotalsbytranstypeRepo extends MongoRepository<TotalsbyTranstype,String> {
-    List<TotalsbyTranstype> findByUserAndTranstypeid(String user, String transtypeid);
+public interface TotalsbytranstypeRepo extends JpaRepository<TotalsbyTranstype,Long> {
+    List<TotalsbyTranstype> findByUserAndTranstypeid(String user, long transtypeid);
 }

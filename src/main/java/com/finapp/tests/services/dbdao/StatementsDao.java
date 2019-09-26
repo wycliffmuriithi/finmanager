@@ -2,8 +2,6 @@ package com.finapp.tests.services.dbdao;
 
 import com.finapp.tests.database.MpesastatementRepo;
 import com.finapp.tests.database.entities.MpesaStatements;
-import org.bson.BsonBinarySubType;
-import org.bson.types.Binary;
 import org.jboss.logging.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
@@ -30,7 +28,7 @@ public class StatementsDao {
         try {
             LOGGER.info("saving file " + multipart.getResource().getFilename());
             MpesaStatements mpesaStatements = new MpesaStatements();
-            mpesaStatements.setStatementfile(new Binary(BsonBinarySubType.BINARY, multipart.getBytes()));
+            mpesaStatements.setStatementfile(multipart.getBytes());
             mpesaStatements.setUser(authenticateduser);
             mpesaStatements.setFilename(multipart.getOriginalFilename());
 
@@ -56,13 +54,13 @@ public class StatementsDao {
 
         MpesaStatements document = mpesadocumentList.get(0);
         LOGGER.info("writing file " + document.getFilename());
-        Resource resource = new ByteArrayResource(document.getStatementfile().getData());
+        Resource resource = new ByteArrayResource(document.getStatementfile());
         return Optional.of(resource);
     }
 
     public List<Resource> retrieveFilesbyuser(String email){
        return mpesastatementRepo.findByUser(email).stream()
-                .map(mpesaStatements -> new ByteArrayResource(mpesaStatements.getStatementfile().getData()))
+                .map(mpesaStatements -> new ByteArrayResource(mpesaStatements.getStatementfile()))
                 .collect(Collectors.toList());
     }
 }
