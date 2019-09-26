@@ -1,9 +1,17 @@
 package com.finapp.tests.services.mpesa.statements;
 
 
+import com.finapp.tests.wrappers.transaction.TransactionWrapper;
+import com.itextpdf.text.exceptions.BadPasswordException;
 import com.itextpdf.text.pdf.*;
 import com.itextpdf.text.pdf.parser.PdfTextExtractor;
 import org.jboss.logging.Logger;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Class name: ReadMpesastatement
@@ -19,21 +27,33 @@ import org.jboss.logging.Logger;
  * this solution seeks to go through the detailed statement and transform that
  * data into consumable format that can be analyzed
  */
+@Service
 public class ReadMpesastatement {
     PdfReader pdfReader;
     private static final Logger LOGGER = Logger.getLogger(ReadMpesastatement.class);
 
-    public static void main(String[] args) {
-        new ReadMpesastatement().simplePDFReader();
-    }
+//    public static void main(String[] args) {
+//        ReadMpesastatement readMpesastatement = new ReadMpesastatement();
+//        try {
+//            readMpesastatement.pdfReader = new PdfReader("C:\\Users\\wgicheru\\Downloads\\DEACONS.pdf", "3802188".getBytes());
+//            LOGGER.info("number of pages " + readMpesastatement.pdfReader.getNumberOfPages());
+//        }catch (BadPasswordException ex){
+//            LOGGER.info("incorrect password");
+//        }catch (Exception e){
+//            LOGGER.error(e.getMessage(),e);
+//        }
+//    }
+
+
 
     /**
      * this method reads a specific file in a particular location
      */
-    public void simplePDFReader() {
-        String filepath = "C:\\Users\\wgicheru\\Downloads\\MPESA_Statement_20180716_to_20190716_254715702887.pdf";
+    @Async
+    public TransactionWrapper simplePDFReader(InputStream statementstream, String password) {
+        List<StatmntTrans> statements = new ArrayList<>();
         try {
-            pdfReader = new PdfReader(filepath, "30802188".getBytes());
+            pdfReader = new PdfReader(statementstream, password.getBytes());
             int pages = pdfReader.getNumberOfPages();
             int counter = 1;
             while (counter <= pages) {
@@ -45,28 +65,22 @@ public class ReadMpesastatement {
                     if (transaction.matches("^\\b[A-Z0-9]{10}\\b\\s[0-9].*")) {
                         StatmntTrans statmntTrans = new StatmntTrans();
                         int nextindex = arrayindex + 1 == raw_transactions.length ? arrayindex : arrayindex + 1;
-//
+//                        LOGGER.info(transaction);
                         statmntTrans.readStatement(transaction, raw_transactions[nextindex]);
-                        LOGGER.info(statmntTrans.getDetails());
+                        statements.add(statmntTrans);
                     }
                     arrayindex++;
                 }
                 counter++;
             }
-
+            return new TransactionWrapper(true,"statement processed ",statements);
+        }catch (BadPasswordException ex){
+            LOGGER.info("incorrect password");
+            return new TransactionWrapper(false,"incorrect password",new ArrayList<>());
         } catch (Exception ex) {
             LOGGER.error(ex.getMessage(), ex);
+            return new TransactionWrapper(false,ex.getMessage(),new ArrayList<>());
         }
     }
 
-    /**
-     * update transactions attached to a user
-     */
-    public void readStatement(){
-//        try {
-//            PdfReader pdfReader = new PdfReader(, "".getBytes());
-//        }catch (Exception ex){
-//
-//        }
-    }
 }

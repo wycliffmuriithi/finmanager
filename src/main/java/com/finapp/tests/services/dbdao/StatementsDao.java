@@ -1,4 +1,4 @@
-package com.finapp.tests.services.mpesa.statements;
+package com.finapp.tests.services.dbdao;
 
 import com.finapp.tests.database.MpesastatementRepo;
 import com.finapp.tests.database.entities.MpesaStatements;
@@ -6,21 +6,13 @@ import org.bson.BsonBinarySubType;
 import org.bson.types.Binary;
 import org.jboss.logging.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.FileOutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
@@ -29,11 +21,10 @@ import java.util.stream.Collectors;
  * Date:7/25/2019
  */
 @Service
-public class FilestorageService {
-    private static final Logger LOGGER = Logger.getLogger(FilestorageService.class);
+public class StatementsDao {
+    private static final Logger LOGGER = Logger.getLogger(StatementsDao.class);
     @Autowired
     MpesastatementRepo mpesastatementRepo;
-
 
     public String saveFileupload(String authenticateduser, MultipartFile multipart) {
         try {
@@ -67,5 +58,11 @@ public class FilestorageService {
         LOGGER.info("writing file " + document.getFilename());
         Resource resource = new ByteArrayResource(document.getStatementfile().getData());
         return Optional.of(resource);
+    }
+
+    public List<Resource> retrieveFilesbyuser(String email){
+       return mpesastatementRepo.findByUser(email).stream()
+                .map(mpesaStatements -> new ByteArrayResource(mpesaStatements.getStatementfile().getData()))
+                .collect(Collectors.toList());
     }
 }

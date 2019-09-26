@@ -30,11 +30,10 @@ public class StatmntTrans {
         df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         try {
             amount = Double.valueOf(transelements[transelements.length - 2]
-                    .replaceAll("[^\\d]", ""))/100;
+                    .replaceAll("[^\\d | ^-]", ""))/100;
             balance = Double.valueOf(transelements[transelements.length - 1]
-                    .replaceAll("[^\\d]", ""))/100;
+                    .replaceAll("[^\\d| ^-]", ""))/100;
             int index = 3;
-
             while (index < transelements.length - 2) {
                 details = details.concat(transelements[index]).concat(" ").replaceAll("Completed","");
                 index++;

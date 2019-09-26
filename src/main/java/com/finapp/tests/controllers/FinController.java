@@ -1,6 +1,8 @@
 package com.finapp.tests.controllers;
 
-import com.finapp.tests.services.mpesa.statements.FilestorageService;
+import com.finapp.tests.services.dbdao.StatementsDao;
+import com.finapp.tests.services.mpesa.transactions.TransactionFactory;
+import com.finapp.tests.wrappers.requests.FactoryAuth;
 import com.finapp.tests.wrappers.responses.ResponseObject;
 import org.jboss.logging.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,9 +16,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -31,25 +30,11 @@ import java.util.stream.Collectors;
 @RequestMapping("/finmanager")
 public class FinController {
     @Autowired
-    FilestorageService filestorageservice;
+    StatementsDao filestorageservice;
+    @Autowired
+    TransactionFactory transactionFactory;
     private static final Logger LOGGER = Logger.getLogger(FinController.class);
 
-
-//    @PostMapping("/singleupload")
-//    public ResponseObject uploadStatement(@RequestParam("file") MultipartFile file) {
-//        try {
-//
-//            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-//            LOGGER.info("user " + auth.getName() + " uploading file " + file.getResource().getFilename());
-//            String result = filestorageservice.saveFileupload(auth.getName(), file);
-//            List<String> resultlist = new ArrayList<>();
-//            resultlist.add(result);
-//            return new ResponseObject("success", "file upload complete", resultlist);
-//        } catch (Exception ex) {
-//            LOGGER.error(ex.getMessage(), ex);
-//        }
-//        return new ResponseObject("failed", "could not load file object", new ArrayList());
-//    }
 
     @PostMapping("/upload")
     public ResponseObject uploadStatements(@RequestParam("files") MultipartFile[] files) {
@@ -86,6 +71,18 @@ public class FinController {
             return ResponseEntity.notFound()
                     .build();
         }
+    }
+
+    /**
+     * this launches the factory job for a specific user...data can only be retrieved once a user gives the nationalid
+     * no password is saved
+     * @param factoryauth
+     */
+    @PostMapping("/authorize")
+    public String authorizeTransactionFactory(@RequestBody FactoryAuth factoryauth){
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        transactionFactory.readMpesatransfromFile(auth.getName(),factoryauth.getNationalidnumber());
+        return "Processing user statements";
     }
 
 }
