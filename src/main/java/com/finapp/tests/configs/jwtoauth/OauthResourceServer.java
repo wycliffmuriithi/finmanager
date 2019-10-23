@@ -61,6 +61,7 @@ public class OauthResourceServer  extends ResourceServerConfigurerAdapter {
     @Bean
     public JwtClaimsSetVerifier jwtClaimsSetVerifier() {
         return new DelegatingJwtClaimsSetVerifier(Arrays.asList(issuerClaimVerifier(), customJwtClaimVerifier()));
+//        return new DelegatingJwtClaimsSetVerifier(Arrays.asList(issuerClaimVerifier()));
     }
 
     @Bean
