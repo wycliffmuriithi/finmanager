@@ -3,6 +3,7 @@ package com.finapp.tests.services.dbdao;
 import com.finapp.tests.database.MpesatransactionsRepo;
 import com.finapp.tests.database.entities.MpesaTransactions;
 import com.finapp.tests.wrappers.enums.TransStatus;
+import com.finapp.tests.wrappers.enums.TransactionPeriods;
 import com.finapp.tests.wrappers.transaction.TransGroupedbyPeriodandType;
 import org.jboss.logging.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -101,7 +102,7 @@ public class TransactionsDao {
      *        {$sort:{"_id.monthperformed":-1}}
      * ])
      */
-    public void groupbyPeriodandTranstype(String period){
+    private List<TransGroupedbyPeriodandType> groupbyPeriodandTranstype(String period){
         String periodoperation = period.concat("(time)");
        ProjectionOperation getPeriod = project("id","transtypeid","amount")
                .andExpression(periodoperation).as("period");
@@ -112,13 +113,45 @@ public class TransactionsDao {
 
         SortOperation sortbyPeriod = sort(Sort.Direction.DESC,"_id.period");
 
-        ProjectionOperation maptoModel = project("amount","freq")
+        ProjectionOperation maptoModel = project("total","freq")
                 .andExpression("_id").as("transDetails");
 
         Aggregation aggregation = newAggregation(getPeriod,groupOperation,sortbyPeriod,maptoModel);
 
         AggregationResults<TransGroupedbyPeriodandType> groupbyResults =
                 mongoTemplate.aggregate(aggregation,"mpesaTransactions",TransGroupedbyPeriodandType.class);
+        return groupbyResults.getMappedResults();
+    }
+
+
+
+    public void userTransactionsperPeriod(TransactionPeriods periodtype, String measure, Calendar startdate, Calendar enddate, String user) {
+//        List<TransactionperPeriod> transactionperPeriodList= new ArrayList<>();
+        switch (periodtype) {
+            case daily:
+                //the start date and end date should be in same month
+                if(startdate.get(Calendar.MONTH) == enddate.get(Calendar.MONTH))
+                   ;
+
+            case weekly:
+                //the start date and end date should be in same year
+                if(startdate.get(Calendar.YEAR) == enddate.get(Calendar.YEAR))
+                    //do something
+                    ;
+            case monthly:
+                //the start date and end date should be in same year
+                if(startdate.get(Calendar.YEAR) == enddate.get(Calendar.YEAR)) {
+                    List<TransGroupedbyPeriodandType> results = groupbyPeriodandTranstype("month");
+                    for(TransGroupedbyPeriodandType data: results) {
+                        LOGGER.info(data.toString());
+                    }
+                }
+            case yearly:
+                break;
+            default:
+                break;
+        }
+//        return transactionperPeriodList;
     }
 
 }

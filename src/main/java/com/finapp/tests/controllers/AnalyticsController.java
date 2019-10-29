@@ -1,10 +1,15 @@
 package com.finapp.tests.controllers;
 
 import com.finapp.tests.services.dbdao.TransactionsDao;
+import com.finapp.tests.wrappers.enums.TransactionPeriods;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Calendar;
+import java.util.Date;
 
 /**
  * Class name: AnalyticsController
@@ -12,10 +17,26 @@ import org.springframework.web.bind.annotation.RestController;
  * Date:10/29/2019
  */
 @RestController
-@RequestMapping("/analyse")
+@RequestMapping("/trans")
 public class AnalyticsController {
     @Autowired
     TransactionsDao transactionsDao;
 
+    @GetMapping("/analysis/{measure}/{period}")
+    public void analyzePeriod(@PathVariable("measure") String measure, @PathVariable("period") String period,
+                              @RequestParam("startdate")@DateTimeFormat(pattern = "dd-MM-yyyy")  Date start,
+                              @RequestParam("enddate")@DateTimeFormat(pattern = "dd-MM-yyyy")  Date end){
+        //measure should be either sum or average
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        //period should be a value in TransactionPeriods
+        if(TransactionPeriods.contains(period)) {
+            Calendar startcal = Calendar.getInstance();
+            startcal.setTime(start);
 
+            Calendar endcal = Calendar.getInstance();
+            endcal.setTime(end);
+            transactionsDao.userTransactionsperPeriod(TransactionPeriods.valueOf(period),measure,startcal,endcal,auth.getName());
+        }
+        //failed, wrong input
+    }
 }
