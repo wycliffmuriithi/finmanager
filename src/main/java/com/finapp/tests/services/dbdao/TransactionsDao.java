@@ -3,14 +3,22 @@ package com.finapp.tests.services.dbdao;
 import com.finapp.tests.database.MpesatransactionsRepo;
 import com.finapp.tests.database.entities.MpesaTransactions;
 import com.finapp.tests.wrappers.enums.TransStatus;
+import com.finapp.tests.wrappers.transaction.TransGroupedbyPeriodandType;
 import org.jboss.logging.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.*;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+
+import static org.springframework.data.mongodb.core.aggregation.Aggregation.*;
 
 /**
  * Class name: TransactionsDao
@@ -23,6 +31,8 @@ public class TransactionsDao {
     private static final Logger LOGGER = Logger.getLogger(TransactionsDao.class);
     @Autowired
     MpesatransactionsRepo mpesatransactionsRepo;
+    @Autowired
+    MongoTemplate mongoTemplate;
 
     /**
      * perform crud operations...
@@ -74,8 +84,41 @@ public class TransactionsDao {
 
 
     public void saveTrans(List<MpesaTransactions> mpesaTransactionslist) {
+
         mpesatransactionsRepo.saveAll(mpesaTransactionslist);
     }
 
+
+    /**
+     * db.mpesaTransactions.aggregate([
+     *     {"$project" : {
+     * 				monthperformed: {$month:"$time"},transtypeid:"$transtypeid",amount:"$amount"
+     *        }},
+     *     {"$group" : {
+     * 				_id:{monthperformed:"$monthperformed",transtype:"$transtypeid"},
+     * 				total: {$sum:"$amount"},freq:{$sum:1}
+     *        }},
+     *        {$sort:{"_id.monthperformed":-1}}
+     * ])
+     */
+    public void groupbyPeriodandTranstype(String period){
+        String periodoperation = period.concat("(time)");
+       ProjectionOperation getPeriod = project("id","transtypeid","amount")
+               .andExpression(periodoperation).as("period");
+
+        GroupOperation groupOperation = group("period","transtypeid")
+                .sum("amount").as("total")
+                .count().as("freq");
+
+        SortOperation sortbyPeriod = sort(Sort.Direction.DESC,"_id.period");
+
+        ProjectionOperation maptoModel = project("amount","freq")
+                .andExpression("_id").as("transDetails");
+
+        Aggregation aggregation = newAggregation(getPeriod,groupOperation,sortbyPeriod,maptoModel);
+
+        AggregationResults<TransGroupedbyPeriodandType> groupbyResults =
+                mongoTemplate.aggregate(aggregation,"mpesaTransactions",TransGroupedbyPeriodandType.class);
+    }
 
 }
