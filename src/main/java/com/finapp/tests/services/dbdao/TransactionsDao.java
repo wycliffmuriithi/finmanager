@@ -54,7 +54,7 @@ public class TransactionsDao {
         long totalpages = Math.round(recordcount / pagesize);
 
         if (pagenumber < totalpages && recordcount > 0) {
-            LOGGER.info("raw page size "+pagesize+" record size "+recordcount);
+            LOGGER.info("raw page size " + pagesize + " record size " + recordcount);
 //            pagesize = pagenumber == totalpages - 1 ? (int) recordcount % pagesize : pagesize;
             LOGGER.info("retrieving mpesa transactions page " + pagenumber + " size " + pagesize);
             Page<MpesaTransactions> mpesatransactionPage = mpesatransactionsRepo.findByProcessed(PageRequest.of(pagenumber, pagesize), TransStatus.mom.name());
@@ -71,7 +71,7 @@ public class TransactionsDao {
         long totalpages = Math.round(recordcount / pagesize);
 
         if (pagenumber < totalpages && recordcount > 0) {
-            LOGGER.info("2_raw page size "+pagesize+" record size "+recordcount);
+            LOGGER.info("2_raw page size " + pagesize + " record size " + recordcount);
 //            pagesize = pagenumber == totalpages - 1 ? (int) recordcount % pagesize : pagesize;
             LOGGER.info("2_retrieving mpesa transactions page " + pagenumber + " size " + pagesize);
             Page<MpesaTransactions> mpesatransactionPage = mpesatransactionsRepo.findByProcessed(PageRequest.of(pagenumber, pagesize), TransStatus.virgin.name());
@@ -92,61 +92,79 @@ public class TransactionsDao {
 
     /**
      * db.mpesaTransactions.aggregate([
-     *     {"$project" : {
-     * 				monthperformed: {$month:"$time"},transtypeid:"$transtypeid",amount:"$amount"
-     *        }},
-     *     {"$group" : {
-     * 				_id:{monthperformed:"$monthperformed",transtype:"$transtypeid"},
-     * 				total: {$sum:"$amount"},freq:{$sum:1}
-     *        }},
-     *        {$sort:{"_id.monthperformed":-1}}
+     * {"$project" : {
+     * monthperformed: {$month:"$time"},transtypeid:"$transtypeid",amount:"$amount"
+     * }},
+     * {"$group" : {
+     * _id:{monthperformed:"$monthperformed",transtype:"$transtypeid"},
+     * total: {$sum:"$amount"},freq:{$sum:1}
+     * }},
+     * {$sort:{"_id.monthperformed":-1}}
      * ])
      */
-    private List<TransGroupedbyPeriodandType> groupbyPeriodandTranstype(String period){
+    private List<TransGroupedbyPeriodandType> groupbyPeriodandTranstype(String period, Date startdate, Date enddate,String user) {
         String periodoperation = period.concat("(time)");
-       ProjectionOperation getPeriod = project("id","transtypeid","amount")
-               .andExpression(periodoperation).as("period");
 
-        GroupOperation groupOperation = group("period","transtypeid")
-                .sum("amount").as("total")
-                .count().as("freq");
+        MatchOperation dateFilter = match(Criteria.where("time").lt(enddate).gt(startdate).and("user").is(user));
 
-        SortOperation sortbyPeriod = sort(Sort.Direction.DESC,"_id.period");
+        ProjectionOperation getPeriod = project("id", "transtypeid", "amount")
+                .andExpression(periodoperation).as("period");
 
-        ProjectionOperation maptoModel = project("total","freq")
+        GroupOperation groupOperation = group("period", "transtypeid")
+                    .avg("amount").as("average")
+                    .sum("amount").as("total")
+                    .count().as("freq");
+
+
+        SortOperation sortbyPeriod = sort(Sort.Direction.DESC, "_id.period");
+
+        ProjectionOperation maptoModel = project("total", "freq")
                 .andExpression("_id").as("transDetails");
 
-        Aggregation aggregation = newAggregation(getPeriod,groupOperation,sortbyPeriod,maptoModel);
+        Aggregation aggregation = newAggregation(dateFilter, getPeriod, groupOperation, sortbyPeriod, maptoModel);
 
         AggregationResults<TransGroupedbyPeriodandType> groupbyResults =
-                mongoTemplate.aggregate(aggregation,"mpesaTransactions",TransGroupedbyPeriodandType.class);
+                mongoTemplate.aggregate(aggregation, "mpesaTransactions", TransGroupedbyPeriodandType.class);
         return groupbyResults.getMappedResults();
     }
 
 
-
-    public void userTransactionsperPeriod(TransactionPeriods periodtype, String measure, Calendar startdate, Calendar enddate, String user) {
+    public void userTransactionsperPeriod(TransactionPeriods periodtype, Calendar startdate, Calendar enddate, String user) {
 //        List<TransactionperPeriod> transactionperPeriodList= new ArrayList<>();
         switch (periodtype) {
             case daily:
                 //the start date and end date should be in same month
-                if(startdate.get(Calendar.MONTH) == enddate.get(Calendar.MONTH))
-                   ;
-
+                if (startdate.get(Calendar.MONTH) == enddate.get(Calendar.MONTH)) {
+                    List<TransGroupedbyPeriodandType> results =
+                            groupbyPeriodandTranstype("dayOfMonth", startdate.getTime(), enddate.getTime(),user);
+                    for (TransGroupedbyPeriodandType data : results) {
+                        LOGGER.info(data.toString());
+                    }
+                }
             case weekly:
                 //the start date and end date should be in same year
-                if(startdate.get(Calendar.YEAR) == enddate.get(Calendar.YEAR))
-                    //do something
-                    ;
+                if (startdate.get(Calendar.YEAR) == enddate.get(Calendar.YEAR)){
+                    List<TransGroupedbyPeriodandType> results =
+                            groupbyPeriodandTranstype("week", startdate.getTime(), enddate.getTime(),user);
+                    for (TransGroupedbyPeriodandType data : results) {
+                        LOGGER.info(data.toString());
+                    }
+                }
             case monthly:
                 //the start date and end date should be in same year
-                if(startdate.get(Calendar.YEAR) == enddate.get(Calendar.YEAR)) {
-                    List<TransGroupedbyPeriodandType> results = groupbyPeriodandTranstype("month");
-                    for(TransGroupedbyPeriodandType data: results) {
+                if (startdate.get(Calendar.YEAR) == enddate.get(Calendar.YEAR)) {
+                    List<TransGroupedbyPeriodandType> results =
+                            groupbyPeriodandTranstype("month", startdate.getTime(), enddate.getTime(),user);
+                    for (TransGroupedbyPeriodandType data : results) {
                         LOGGER.info(data.toString());
                     }
                 }
             case yearly:
+                List<TransGroupedbyPeriodandType> results =
+                        groupbyPeriodandTranstype("year", startdate.getTime(), enddate.getTime(),user);
+                for (TransGroupedbyPeriodandType data : results) {
+                    LOGGER.info(data.toString());
+                }
                 break;
             default:
                 break;

@@ -22,21 +22,23 @@ public class AnalyticsController {
     @Autowired
     TransactionsDao transactionsDao;
 
-    @GetMapping("/analysis/{measure}/{period}")
-    public void analyzePeriod(@PathVariable("measure") String measure, @PathVariable("period") String period,
+    @GetMapping("/analysis/{period}")
+    public void analyzePeriod(@PathVariable("period") String period,
                               @RequestParam("startdate")@DateTimeFormat(pattern = "dd-MM-yyyy")  Date start,
                               @RequestParam("enddate")@DateTimeFormat(pattern = "dd-MM-yyyy")  Date end){
-        //measure should be either sum or average
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        //period should be a value in TransactionPeriods
-        if(TransactionPeriods.contains(period)) {
-            Calendar startcal = Calendar.getInstance();
-            startcal.setTime(start);
 
-            Calendar endcal = Calendar.getInstance();
-            endcal.setTime(end);
-            transactionsDao.userTransactionsperPeriod(TransactionPeriods.valueOf(period),measure,startcal,endcal,auth.getName());
-        }
+
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            //period should be a value in TransactionPeriods
+            if (TransactionPeriods.contains(period)) {
+                Calendar startcal = Calendar.getInstance();
+                startcal.setTime(start);
+
+                Calendar endcal = Calendar.getInstance();
+                endcal.setTime(end);
+                transactionsDao.userTransactionsperPeriod(TransactionPeriods.valueOf(period), startcal, endcal, auth.getName());
+            }
+
         //failed, wrong input
     }
 }
